@@ -1,5 +1,3 @@
-local URL = "https://raw.githubusercontent.com/Nxy67969/Luna/refs/heads/main/Ohio"
-
 local function Http(u)
     local f = (syn and syn.request) or request or http_request
     if f then
@@ -17,6 +15,22 @@ local function Notify(text)
     end)
 end
 
+local function LoadChunk(url)
+    local src = Http(url)
+    if type(src) ~= "string" or src == "" then
+        error("下载脚本失败")
+    end
+    local fn, perr = loadstring(src)
+    if not fn then
+        error(perr or "编译失败")
+    end
+    return fn()
+end
+
+local Modules = {
+    [7239319209] = "https://raw.githubusercontent.com/Nxy67969/Luna/refs/heads/main/Ohio",
+}
+
 local function CleanKey(text)
     local k = tostring(text or "")
     k = k:match('SCRIPT_KEY%s*=%s*"(.-)"') or k:match('"(.-)"') or k
@@ -31,21 +45,16 @@ local function Run(key)
     end
     getgenv().SCRIPT_KEY = key
     SCRIPT_KEY = key
+    local URL = Modules[game.PlaceId] or Modules[game.GameId]
+    if not URL then
+        Notify("Not Supported On This Server")
+        return false
+    end
     task.spawn(function()
-        local ok, err = pcall(function()
-            local src = Http(URL)
-            if type(src) ~= "string" or src == "" then
-                error("下载脚本失败")
-            end
-            local fn, perr = loadstring(src)
-            if not fn then
-                error(perr or "编译失败")
-            end
-            fn()
-        end)
+        local ok, err = pcall(LoadChunk, URL)
         if not ok then
             Notify("执行失败: " .. tostring(err))
-            warn("[Luna] " .. tostring(err))
+            print("Error:", err)
         end
     end)
     return true
@@ -65,98 +74,76 @@ Gui.IgnoreGuiInset = true
 Gui.Parent = Parent
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 340, 0, 190)
-Main.Position = UDim2.new(0.5, -170, 0.5, -95)
-Main.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
+Main.Size = UDim2.new(0, 320, 0, 150)
+Main.Position = UDim2.new(0.5, -160, 0.5, -75)
+Main.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
 Main.BorderSizePixel = 0
 Main.Active = true
 Main.Draggable = true
 Main.Parent = Gui
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 10)
-Corner.Parent = Main
-
-local Stroke = Instance.new("UIStroke")
-Stroke.Color = Color3.fromRGB(255, 105, 180)
-Stroke.Thickness = 1.5
-Stroke.Parent = Main
+local Line = Instance.new("Frame")
+Line.Size = UDim2.new(1, 0, 0, 2)
+Line.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+Line.BorderSizePixel = 0
+Line.Parent = Main
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Size = UDim2.new(1, -20, 0, 34)
+Title.Position = UDim2.new(0, 10, 0, 4)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
 Title.Text = "Luna 启动器"
 Title.TextColor3 = Color3.fromRGB(255, 105, 180)
-Title.TextSize = 18
+Title.TextSize = 16
+Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Main
 
 local Box = Instance.new("TextBox")
-Box.Size = UDim2.new(1, -40, 0, 40)
-Box.Position = UDim2.new(0, 20, 0, 50)
-Box.BackgroundColor3 = Color3.fromRGB(35, 35, 44)
+Box.Size = UDim2.new(1, -20, 0, 36)
+Box.Position = UDim2.new(0, 10, 0, 42)
+Box.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
 Box.BorderSizePixel = 0
 Box.Font = Enum.Font.Gotham
-Box.PlaceholderText = 'Luna_......'
+Box.PlaceholderText = 'SCRIPT_KEY = "..."'
 Box.Text = ""
 Box.TextColor3 = Color3.fromRGB(235, 235, 235)
-Box.PlaceholderColor3 = Color3.fromRGB(130, 130, 140)
+Box.PlaceholderColor3 = Color3.fromRGB(120, 120, 130)
 Box.TextSize = 14
 Box.ClearTextOnFocus = false
 Box.Parent = Main
 
-local BoxCorner = Instance.new("UICorner")
-BoxCorner.CornerRadius = UDim.new(0, 8)
-BoxCorner.Parent = Box
-
 local Status = Instance.new("TextLabel")
-Status.Size = UDim2.new(1, -40, 0, 20)
-Status.Position = UDim2.new(0, 20, 0, 96)
+Status.Size = UDim2.new(1, -20, 0, 18)
+Status.Position = UDim2.new(0, 10, 0, 82)
 Status.BackgroundTransparency = 1
 Status.Font = Enum.Font.Gotham
 Status.Text = "输入卡密后点击执行"
-Status.TextColor3 = Color3.fromRGB(150, 150, 160)
+Status.TextColor3 = Color3.fromRGB(140, 140, 150)
 Status.TextSize = 12
 Status.TextXAlignment = Enum.TextXAlignment.Left
 Status.Parent = Main
 
-local function Button(text, x, w, color, callback)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, w, 0, 36)
-    b.Position = UDim2.new(0, x, 0, 128)
-    b.BackgroundColor3 = color
-    b.BorderSizePixel = 0
-    b.Font = Enum.Font.GothamBold
-    b.Text = text
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.TextSize = 14
-    b.Parent = Main
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 8)
-    c.Parent = b
-    b.MouseButton1Click:Connect(callback)
-    return b
-end
+local RunBtn = Instance.new("TextButton")
+RunBtn.Size = UDim2.new(1, -20, 0, 34)
+RunBtn.Position = UDim2.new(0, 10, 0, 106)
+RunBtn.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+RunBtn.BorderSizePixel = 0
+RunBtn.AutoButtonColor = true
+RunBtn.Font = Enum.Font.GothamBold
+RunBtn.Text = "执行"
+RunBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RunBtn.TextSize = 15
+RunBtn.Parent = Main
 
-Button("粘贴", 20, 90, Color3.fromRGB(60, 60, 75), function()
-    pcall(function()
-        Box.Text = tostring(getclipboard() or "")
-    end)
-end)
-
-Button("执行", 220, 100, Color3.fromRGB(255, 105, 180), function()
+RunBtn.MouseButton1Click:Connect(function()
     local key = CleanKey(Box.Text)
     if key == "" then
         Status.Text = "卡密不能为空"
         return
     end
     Status.Text = "正在启动..."
-    Notify("正在启动 Luna")
-    Gui:Destroy()
-    Run(key)
-end)
-
-Button("清空", 120, 90, Color3.fromRGB(45, 45, 58), function()
-    Box.Text = ""
-    Status.Text = "已清空"
+    if Run(key) then
+        Gui:Destroy()
+    end
 end)
