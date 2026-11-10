@@ -1,0 +1,162 @@
+local URL = "https://raw.githubusercontent.com/Nxy67969/Luna/refs/heads/main/Ohio"
+
+local function Http(u)
+    local f = (syn and syn.request) or request or http_request
+    if f then
+        local ok, r = pcall(f, { Url = u, Method = "GET" })
+        if ok and r then
+            return type(r) == "table" and tostring(r.Body or r.body or "") or tostring(r)
+        end
+    end
+    return game:HttpGet(u)
+end
+
+local function Notify(text)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", { Title = "Luna", Text = tostring(text), Duration = 6 })
+    end)
+end
+
+local function CleanKey(text)
+    local k = tostring(text or "")
+    k = k:match('SCRIPT_KEY%s*=%s*"(.-)"') or k:match('"(.-)"') or k
+    return (k:gsub("%s", ""))
+end
+
+local function Run(key)
+    key = CleanKey(key)
+    if key == "" then
+        Notify("请输入卡密")
+        return false
+    end
+    getgenv().SCRIPT_KEY = key
+    SCRIPT_KEY = key
+    task.spawn(function()
+        local ok, err = pcall(function()
+            local src = Http(URL)
+            if type(src) ~= "string" or src == "" then
+                error("下载脚本失败")
+            end
+            local fn, perr = loadstring(src)
+            if not fn then
+                error(perr or "编译失败")
+            end
+            fn()
+        end)
+        if not ok then
+            Notify("执行失败: " .. tostring(err))
+            warn("[Luna] " .. tostring(err))
+        end
+    end)
+    return true
+end
+
+if getgenv and getgenv().SCRIPT_KEY and getgenv().SCRIPT_KEY ~= "" then
+    Run(getgenv().SCRIPT_KEY)
+    return
+end
+
+local Parent = (gethui and gethui()) or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "LunaLauncher"
+Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = true
+Gui.Parent = Parent
+
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 340, 0, 190)
+Main.Position = UDim2.new(0.5, -170, 0.5, -95)
+Main.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Main.Parent = Gui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 10)
+Corner.Parent = Main
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(255, 105, 180)
+Stroke.Thickness = 1.5
+Stroke.Parent = Main
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.GothamBold
+Title.Text = "Luna 启动器"
+Title.TextColor3 = Color3.fromRGB(255, 105, 180)
+Title.TextSize = 18
+Title.Parent = Main
+
+local Box = Instance.new("TextBox")
+Box.Size = UDim2.new(1, -40, 0, 40)
+Box.Position = UDim2.new(0, 20, 0, 50)
+Box.BackgroundColor3 = Color3.fromRGB(35, 35, 44)
+Box.BorderSizePixel = 0
+Box.Font = Enum.Font.Gotham
+Box.PlaceholderText = 'Luna_......'
+Box.Text = ""
+Box.TextColor3 = Color3.fromRGB(235, 235, 235)
+Box.PlaceholderColor3 = Color3.fromRGB(130, 130, 140)
+Box.TextSize = 14
+Box.ClearTextOnFocus = false
+Box.Parent = Main
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 8)
+BoxCorner.Parent = Box
+
+local Status = Instance.new("TextLabel")
+Status.Size = UDim2.new(1, -40, 0, 20)
+Status.Position = UDim2.new(0, 20, 0, 96)
+Status.BackgroundTransparency = 1
+Status.Font = Enum.Font.Gotham
+Status.Text = "输入卡密后点击执行"
+Status.TextColor3 = Color3.fromRGB(150, 150, 160)
+Status.TextSize = 12
+Status.TextXAlignment = Enum.TextXAlignment.Left
+Status.Parent = Main
+
+local function Button(text, x, w, color, callback)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, w, 0, 36)
+    b.Position = UDim2.new(0, x, 0, 128)
+    b.BackgroundColor3 = color
+    b.BorderSizePixel = 0
+    b.Font = Enum.Font.GothamBold
+    b.Text = text
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.TextSize = 14
+    b.Parent = Main
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 8)
+    c.Parent = b
+    b.MouseButton1Click:Connect(callback)
+    return b
+end
+
+Button("粘贴", 20, 90, Color3.fromRGB(60, 60, 75), function()
+    pcall(function()
+        Box.Text = tostring(getclipboard() or "")
+    end)
+end)
+
+Button("执行", 220, 100, Color3.fromRGB(255, 105, 180), function()
+    local key = CleanKey(Box.Text)
+    if key == "" then
+        Status.Text = "卡密不能为空"
+        return
+    end
+    Status.Text = "正在启动..."
+    Notify("正在启动 Luna")
+    Gui:Destroy()
+    Run(key)
+end)
+
+Button("清空", 120, 90, Color3.fromRGB(45, 45, 58), function()
+    Box.Text = ""
+    Status.Text = "已清空"
+end)
